@@ -11,6 +11,7 @@ import {
     WebGLRenderTarget
 } from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+
 import VERTEX_SHADER from './glsl/default.vert?raw';
 import DOWNSAMPLE_FRAGMENT_SHADER from './glsl/dual-filter-downsample.frag?raw';
 import UPSAMPLE_FRAGMENT_SHADER from './glsl/dual-filter-upsample.frag?raw';
@@ -33,13 +34,13 @@ export class UnrealBloomEffect {
     private threshold: number;
     private resolution: Vector2;
 
-    private clearColor: Color;
-    private resolutionFactor: number;
-    private nMips: number;
-    private targetMip: number;
-    private blurRenderTargets: Array<WebGLRenderTarget>;
-    private downsampleRenderTargets: Array<WebGLRenderTarget>;
-    private upsampleRenderTargets: Array<WebGLRenderTarget>;
+    private clearColor: Color = new Color(0, 0, 0);
+    private resolutionFactor: number = 0.5;
+    private nMips: number = 7;
+    private targetMip: number = 1;
+    private blurRenderTargets: Array<WebGLRenderTarget> = [];
+    private downsampleRenderTargets: Array<WebGLRenderTarget> = [];
+    private upsampleRenderTargets: Array<WebGLRenderTarget> = [];
 
     private downsampleMaterial: ShaderMaterial;
     private upsampleMaterial: ShaderMaterial;
@@ -47,9 +48,9 @@ export class UnrealBloomEffect {
 
     private bloomTintColors: Array<Vector3>;
 
-    private _oldClearColor: Color;
-    private oldClearAlpha: number;
-    private fsQuad: FullScreenQuad;
+    private _oldClearColor: Color = new Color();
+    private oldClearAlpha: number = 1;
+    private fsQuad: FullScreenQuad = new FullScreenQuad();
 
     constructor(resolution?: Vector2, strength?: number, radius?: number, threshold?: number) {
         this.strength = (strength !== undefined) ? strength : 1;
@@ -58,19 +59,10 @@ export class UnrealBloomEffect {
         this.resolution = (resolution !== undefined) ? new Vector2(resolution.x, resolution.y) : new Vector2(256, 256);
 
         // create color only once here, reuse it later inside the render function
-        this.clearColor = new Color(0, 0, 0);
 
         // render targets
-        this.resolutionFactor = 0.5;
         let resx = Math.round(this.resolution.x * this.resolutionFactor);
         let resy = Math.round(this.resolution.y * this.resolutionFactor);
-
-        this.nMips = 7;
-        this.targetMip = 1;
-        this.blurRenderTargets = [];
-
-        this.downsampleRenderTargets = [];
-        this.upsampleRenderTargets = [];
         for (let i = 0; i < this.nMips; i++) {
             if (i === this.targetMip) {
                 for (let j = i; j < this.nMips; j++) {
@@ -110,23 +102,28 @@ export class UnrealBloomEffect {
         });
 
         // composite material
-        this.compositeMaterial = this.getCompositeMaterial(this.nMips);
-        this.compositeMaterial.uniforms['blurTexture1'].value = this.blurRenderTargets[0]?.texture; //this.downsampleRenderTargets[this.targetMip]?.texture;
-        this.compositeMaterial.uniforms['blurTexture2'].value = this.blurRenderTargets[1]?.texture;
-        this.compositeMaterial.uniforms['blurTexture3'].value = this.blurRenderTargets[2]?.texture;
-        this.compositeMaterial.uniforms['blurTexture4'].value = this.blurRenderTargets[3]?.texture;
-        this.compositeMaterial.uniforms['blurTexture5'].value = this.blurRenderTargets[4]?.texture;
-        this.compositeMaterial.uniforms['bloomStrength'].value = strength;
-        this.compositeMaterial.uniforms['bloomRadius'].value = this.radius;
-
-        const bloomFactors = [1.0, 0.8, 0.6, 0.4, 0.2];
-        this.compositeMaterial.uniforms['bloomFactors'].value = bloomFactors;
         this.bloomTintColors = [new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 1)];
-        this.compositeMaterial.uniforms['bloomTintColors'].value = this.bloomTintColors;
-
-        this._oldClearColor = new Color();
-        this.oldClearAlpha = 1;
-        this.fsQuad = new FullScreenQuad();
+        this.compositeMaterial = new ShaderMaterial({
+            defines: {
+                'NUM_MIPS': Math.min(this.nMips, 5)
+            },
+            uniforms: {
+                'blurTexture1': { value: this.blurRenderTargets[0]?.texture },
+                'blurTexture2': { value: this.blurRenderTargets[1]?.texture },
+                'blurTexture3': { value: this.blurRenderTargets[2]?.texture },
+                'blurTexture4': { value: this.blurRenderTargets[3]?.texture },
+                'blurTexture5': { value: this.blurRenderTargets[4]?.texture },
+                'bloomStrength': { value: strength },
+                'bloomFactors': { value: [1.0, 0.8, 0.6, 0.4, 0.2] },
+                'bloomTintColors': { value: this.bloomTintColors },
+                'bloomRadius': { value: this.radius }
+            },
+            vertexShader: VERTEX_SHADER,
+            fragmentShader: COMPOSITE_FRAGMENT_SHADER,
+            depthTest: false,
+            depthWrite: false,
+            blending: AdditiveBlending
+        });
     }
 
     dispose() {
@@ -148,7 +145,7 @@ export class UnrealBloomEffect {
         for (let i = 0; i < this.nMips; i++) {
             if (i === this.targetMip) {
                 for (let j = 0; j < this.blurRenderTargets.length; j++) {
-                    this.blurRenderTargets[j].setSize(resx, resy); // 640, 335);
+                    this.blurRenderTargets[j].setSize(resx, resy);
                 }
             }
 
@@ -224,7 +221,7 @@ export class UnrealBloomEffect {
             this.fsQuad.render(renderer);
         }
 
-        // Composite All the mips
+        // Composite all different blur levels
         this.fsQuad.material = this.compositeMaterial;
         this.compositeMaterial.uniforms['bloomStrength'].value = this.strength;
         this.compositeMaterial.uniforms['bloomRadius'].value = this.radius;
@@ -244,29 +241,5 @@ export class UnrealBloomEffect {
         renderer.setClearColor(this._oldClearColor, this.oldClearAlpha);
         renderer.autoClear = oldAutoClear;
         renderer.xr.enabled = oldXrEnabled;
-    }
-
-    getCompositeMaterial(nMips: number) {
-        return new ShaderMaterial({
-            defines: {
-                'NUM_MIPS': Math.min(nMips, 5)
-            },
-            uniforms: {
-                'blurTexture1': { value: null },
-                'blurTexture2': { value: null },
-                'blurTexture3': { value: null },
-                'blurTexture4': { value: null },
-                'blurTexture5': { value: null },
-                'bloomStrength': { value: 1.0 },
-                'bloomFactors': { value: null },
-                'bloomTintColors': { value: null },
-                'bloomRadius': { value: 0.0 }
-            },
-            vertexShader: VERTEX_SHADER,
-            fragmentShader: COMPOSITE_FRAGMENT_SHADER,
-            depthTest: false,
-            depthWrite: false,
-            blending: AdditiveBlending
-        });
     }
 }
