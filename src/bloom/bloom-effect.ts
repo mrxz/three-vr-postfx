@@ -49,7 +49,6 @@ export class UnrealBloomEffect {
     private bloomTintColors: Array<Vector3>;
 
     private _oldClearColor: Color = new Color();
-    private oldClearAlpha: number = 1;
     private fsQuad: FullScreenQuad = new FullScreenQuad();
 
     constructor(resolution?: Vector2, strength?: number, radius?: number, threshold?: number) {
@@ -157,6 +156,8 @@ export class UnrealBloomEffect {
     }
 
     render(renderer: WebGLRenderer, scene: Object3D, camera: Camera) {
+        const currentRenderTarget = renderer.getRenderTarget();
+
         // Adjust viewport of xr camera
         if (renderer.xr.isPresenting) {
             const xrCamera = renderer.xr.getCamera();
@@ -179,7 +180,7 @@ export class UnrealBloomEffect {
         renderer.xr.enabled = false;
 
         renderer.getClearColor(this._oldClearColor);
-        this.oldClearAlpha = renderer.getClearAlpha();
+        const oldClearAlpha = renderer.getClearAlpha();
         const oldAutoClear = renderer.autoClear;
         renderer.autoClear = false;
 
@@ -198,7 +199,6 @@ export class UnrealBloomEffect {
             this.downsampleMaterial.uniforms['previousTexture'].value = this.downsampleRenderTargets[i].texture;
             this.downsampleMaterial.uniforms['previousTextureRes'].value.set(this.downsampleRenderTargets[i].width, this.downsampleRenderTargets[i].height);
             this.downsampleMaterial.uniforms['luminosityThreshold'].value = 0.0;
-            this.downsampleMaterial.uniforms['luminosityThreshold'].needsUpdate = true;
         }
 
         // 3. Upsample
@@ -227,18 +227,17 @@ export class UnrealBloomEffect {
         this.compositeMaterial.uniforms['bloomRadius'].value = this.radius;
         this.compositeMaterial.uniforms['bloomTintColors'].value = this.bloomTintColors;
 
-        renderer.setRenderTarget(null);
+        renderer.setRenderTarget(currentRenderTarget);
         renderer.xr.enabled = oldXrEnabled;
         renderer.render(scene, camera);
         renderer.xr.enabled = false;
         if (renderer.xr.isPresenting) {
-            //const renderTarget = renderer.xr.getRenderTarget();
-            //renderer.setViewport(0, 0, renderTarget.width, renderTarget.height);
+            renderer.setViewport(0, 0, currentRenderTarget!.width, currentRenderTarget!.height);
         }
         this.fsQuad.render(renderer);
 
         // Restore renderer settings
-        renderer.setClearColor(this._oldClearColor, this.oldClearAlpha);
+        renderer.setClearColor(this._oldClearColor, oldClearAlpha);
         renderer.autoClear = oldAutoClear;
         renderer.xr.enabled = oldXrEnabled;
     }
