@@ -57,8 +57,6 @@ export class UnrealBloomEffect {
         this.threshold = (threshold !== undefined) ? threshold : 0.1;
         this.resolution = (resolution !== undefined) ? new Vector2(resolution.x, resolution.y) : new Vector2(256, 256);
 
-        // create color only once here, reuse it later inside the render function
-
         // render targets
         let resx = Math.round(this.resolution.x * this.resolutionFactor);
         let resy = Math.round(this.resolution.y * this.resolutionFactor);
@@ -121,7 +119,8 @@ export class UnrealBloomEffect {
             fragmentShader: COMPOSITE_FRAGMENT_SHADER,
             depthTest: false,
             depthWrite: false,
-            blending: AdditiveBlending
+            blending: AdditiveBlending,
+            dithering: true
         });
     }
 

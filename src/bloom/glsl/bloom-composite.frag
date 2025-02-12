@@ -9,6 +9,9 @@ uniform float bloomRadius;
 uniform float bloomFactors[NUM_MIPS];
 uniform vec3 bloomTintColors[NUM_MIPS];
 
+#include <common>
+#include <dithering_pars_fragment>
+
 float lerpBloomFactor(const in float factor) {
     float mirrorFactor = 1.2 - factor;
     return mix(factor, mirrorFactor, bloomRadius);
@@ -24,4 +27,5 @@ void main() {
     );
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
+    #include <dithering_fragment>
 }
