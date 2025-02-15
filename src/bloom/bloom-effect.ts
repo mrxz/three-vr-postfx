@@ -37,7 +37,7 @@ export class UnrealBloomEffect {
     private clearColor: Color = new Color(0, 0, 0);
     private resolutionFactor: number = 0.5;
     private nMips: number = 7;
-    private targetMip: number = 1;
+    private targetMip: number = 2;
     private blurRenderTargets: Array<WebGLRenderTarget> = [];
     private downsampleRenderTargets: Array<WebGLRenderTarget> = [];
     private upsampleRenderTargets: Array<WebGLRenderTarget> = [];
@@ -167,6 +167,9 @@ export class UnrealBloomEffect {
         // Render main scene
         renderer.setRenderTarget(this.downsampleRenderTargets[0]);
         renderer.render(scene, camera);
+        // The final render still needs to take place, so reduce frame counter.
+        // This prevents per-frame computations from being executed twice.
+        renderer.info.render.frame--;
 
         if (renderer.xr.isPresenting) {
             const xrCamera = renderer.xr.getCamera();
