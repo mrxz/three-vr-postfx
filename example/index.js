@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Timer } from 'three/addons/misc/Timer.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { UnrealBloomEffect } from '@fern-solutions/three-vr-postfx';
+import { SobelEffect } from '@fern-solutions/three-vr-postfx';
 
 // Setup Three.js scene
 const scene = new THREE.Scene();
@@ -22,6 +23,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 // UnrealBloom Effect
 const unrealBloomEffect = new UnrealBloomEffect(undefined, 1.0, 0.0, 0.1);
+const sobelEffect = new SobelEffect();
 
 const resize = () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -29,6 +31,7 @@ const resize = () => {
   camera.updateProjectionMatrix();
 
   unrealBloomEffect.setSize(window.innerWidth, window.innerHeight);
+  sobelEffect.setSize(window.innerWidth, window.innerHeight);
 }
 window.addEventListener('resize', () => resize())
 resize();
@@ -40,5 +43,6 @@ renderer.setAnimationLoop((timestamp) => {
     controls.update(timer.getDelta());
 
     //renderer.render(scene, camera);
-    unrealBloomEffect.render(renderer, scene, camera);
+    //unrealBloomEffect.render(renderer, scene, camera);
+    sobelEffect.render(renderer, scene, camera);
 });
