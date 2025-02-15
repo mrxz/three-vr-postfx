@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Timer } from 'three/addons/misc/Timer.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { UnrealBloomEffect } from '@fern-solutions/three-vr-postfx';
 import { SobelEffect } from '@fern-solutions/three-vr-postfx';
 
@@ -16,8 +17,10 @@ const light = new THREE.DirectionalLight('white', 2.5);
 light.position.set(2, 4, 3);
 scene.add(light);
 
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
+document.body.appendChild(VRButton.createButton(renderer));
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -26,15 +29,27 @@ const unrealBloomEffect = new UnrealBloomEffect(undefined, 1.0, 0.0, 0.1);
 const sobelEffect = new SobelEffect();
 
 const resize = () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+    if(renderer.xr.isPresenting) {
+        return;
+    }
 
-  unrealBloomEffect.setSize(window.innerWidth, window.innerHeight);
-  sobelEffect.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    unrealBloomEffect.setSize(window.innerWidth, window.innerHeight);
+    sobelEffect.setSize(window.innerWidth, window.innerHeight);
 }
 window.addEventListener('resize', () => resize())
 resize();
+
+// Resize when entering/exiting VR
+renderer.xr.addEventListener('sessionstart', _ => {
+    const size = renderer.getSize(new THREE.Vector2());
+    unrealBloomEffect.setSize(size.width, size.height);
+    sobelEffect.setSize(size.width, size.height);
+});
+renderer.xr.addEventListener('sessionend', _ => resize());
 
 const timer = new Timer();
 renderer.setAnimationLoop((timestamp) => {

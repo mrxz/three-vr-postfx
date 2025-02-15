@@ -21,6 +21,7 @@ export class SobelEffect {
         this.renderTarget = new WebGLRenderTarget(this.resolution.x, this.resolution.y, {
             // Render in sRGB color space to avoid banding without resorting to (Half)Float types
             colorSpace: SRGBColorSpace,
+            samples: 4,
         });
 
         // downsample material
@@ -45,6 +46,7 @@ export class SobelEffect {
 
     setSize(width: number, height: number) {
         this.renderTarget.setSize(width, height);
+        this.shaderMaterial.uniforms['readBuffer'].value = this.renderTarget.texture;
         this.shaderMaterial.uniforms['resolution'].value.set(width, height);
     }
 
@@ -66,6 +68,7 @@ export class SobelEffect {
 
         renderer.setClearColor(this.clearColor, 0);
 
+        // Render with sobel effect into back buffer
         renderer.setRenderTarget(currentRenderTarget);
         if (renderer.xr.isPresenting) {
             renderer.setViewport(0, 0, currentRenderTarget!.width, currentRenderTarget!.height);
