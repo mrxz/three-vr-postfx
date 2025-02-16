@@ -2,9 +2,7 @@ import * as THREE from 'three';
 import { Timer } from 'three/addons/misc/Timer.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
-import { UnrealBloomEffect } from '@fern-solutions/three-vr-postfx';
-import { SobelEffect } from '@fern-solutions/three-vr-postfx';
-import { BlurEffect } from '@fern-solutions/three-vr-postfx';
+import { BasicBloomEffect, UnrealBloomEffect, SobelEffect, BlurEffect } from '@fern-solutions/three-vr-postfx';
 
 // Setup Three.js scene
 const scene = new THREE.Scene();
@@ -25,7 +23,8 @@ document.body.appendChild(VRButton.createButton(renderer));
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
-// UnrealBloom Effect
+// Effects
+const basicBloomEffect = new BasicBloomEffect();
 const unrealBloomEffect = new UnrealBloomEffect(undefined, 1.0, 0.0, 0.1);
 const sobelEffect = new SobelEffect();
 const blurEffect = new BlurEffect();
@@ -39,6 +38,7 @@ const resize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
+    basicBloomEffect.setSize(window.innerWidth, window.innerHeight);
     unrealBloomEffect.setSize(window.innerWidth, window.innerHeight);
     sobelEffect.setSize(window.innerWidth, window.innerHeight);
     blurEffect.setSize(window.innerWidth, window.innerHeight);
@@ -49,6 +49,7 @@ resize();
 // Resize when entering/exiting VR
 renderer.xr.addEventListener('sessionstart', _ => {
     const size = renderer.getSize(new THREE.Vector2());
+    basicBloomEffect.setSize(size.width, size.height);
     unrealBloomEffect.setSize(size.width, size.height);
     sobelEffect.setSize(size.width, size.height);
     blurEffect.setSize(size.width, size.height);
@@ -62,7 +63,8 @@ renderer.setAnimationLoop((timestamp) => {
     controls.update(timer.getDelta());
 
     //renderer.render(scene, camera);
+    basicBloomEffect.render(renderer, scene, camera);
     //unrealBloomEffect.render(renderer, scene, camera);
     //sobelEffect.render(renderer, scene, camera);
-    blurEffect.render(renderer, scene, camera);
+    //blurEffect.render(renderer, scene, camera);
 });

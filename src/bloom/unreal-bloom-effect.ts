@@ -15,7 +15,7 @@ import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import VERTEX_SHADER from './glsl/default.vert?raw';
 import DOWNSAMPLE_FRAGMENT_SHADER from './glsl/dual-filter-downsample.frag?raw';
 import UPSAMPLE_FRAGMENT_SHADER from './glsl/dual-filter-upsample.frag?raw';
-import COMPOSITE_FRAGMENT_SHADER from './glsl/bloom-composite.frag?raw';
+import COMPOSITE_FRAGMENT_SHADER from './glsl/unreal-bloom-composite.frag?raw';
 
 const RENDER_TARGET_DEFAULTS = {
     type: HalfFloatType,
@@ -29,13 +29,14 @@ const RENDER_TARGET_DEFAULTS = {
  * See: https://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
  */
 export class UnrealBloomEffect {
+    private resolution: Vector2;
+    private resolutionFactor: number = 0.5;
+
     private strength: number;
     private radius: number;
     private threshold: number;
-    private resolution: Vector2;
 
     private clearColor: Color = new Color(0, 0, 0);
-    private resolutionFactor: number = 0.5;
     private nMips: number = 7;
     private targetMip: number = 2;
     private blurRenderTargets: Array<WebGLRenderTarget> = [];
