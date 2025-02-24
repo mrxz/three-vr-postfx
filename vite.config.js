@@ -13,6 +13,9 @@ export default defineConfig({
       fileName: 'three-vr-postfx',
       formats: ['es'],
     },
+    rollupOptions: {
+      external: ['three', /^three\/.*/]
+    }
   },
   publicDir: 'www/public/',
   resolve: {
