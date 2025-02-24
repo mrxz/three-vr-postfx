@@ -19,8 +19,33 @@
         height: 100%;
         margin: 0;
         padding: 0;
+        background-color: #000;
+        color: #fff;
+      }
+      #info {
+        position: absolute;
+        top: 0px;
+        width: 100%;
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        box-sizing: border-box;
+        text-align: center;
+        user-select: none;
+        pointer-events: none;
+        z-index: 1;
+      }
+      a {
+        pointer-events: auto;
+        text-decoration: none;
+        color: #2983ff;
       }
     </style>
   </head>
-  <body></body>
+  <body>
+    <div id="info">
+      Three.js VR Post FX example scene <br>
+      Model: <a href="https://casual-effects.com/g3d/data10/index.html#mesh21" target="_blank" rel="noopener">Living Room</a> by
+      <a href="http://www.blendswap.com/user/Jay-Artist" target="_blank" rel="noopener">Jay</a>, CC-BY 3.0.
+    </div>
+  </body>
 </html>
