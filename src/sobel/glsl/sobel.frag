@@ -4,50 +4,33 @@ uniform sampler2D readBuffer;
 uniform vec2 resolution;
 
 #include <common>
-#include <dithering_pars_fragment>
 
 void main() {
     vec2 texel = vec2( 1.0 / resolution.x, 1.0 / resolution.y );
 
-    // kernel definition (in glsl matrices are filled in column-major order)
-    const mat3 Gx = mat3(
-        -1, -2, -1,
-        0, 0, 0,
-        1, 2, 1); // x direction kernel
-    const mat3 Gy = mat3(
-        -1, 0, 1,
-        -2, 0, 2,
-        -1, 0, 1); // y direction kernel
+    float t00 = texture2D(readBuffer, vUv + texel * vec2(-1, -1)).g;
+    float t10 = texture2D(readBuffer, vUv + texel * vec2( 0, -1)).g;
+    float t20 = texture2D(readBuffer, vUv + texel * vec2( 1, -1)).g;
 
-    // fetch the 3x3 neighbourhood of a fragment
+    float t01 = texture2D(readBuffer, vUv + texel * vec2(-1,  0)).g;
+    float t11 = texture2D(readBuffer, vUv + texel * vec2( 0,  0)).g;
+    float t21 = texture2D(readBuffer, vUv + texel * vec2( 1,  0)).g;
 
-    // first column
-    float tx0y0 = texture2D(readBuffer, vUv + texel * vec2(-1, -1)).r;
-    float tx0y1 = texture2D(readBuffer, vUv + texel * vec2(-1,  0)).r;
-    float tx0y2 = texture2D(readBuffer, vUv + texel * vec2(-1,  1)).r;
+    float t02 = texture2D(readBuffer, vUv + texel * vec2(-1,  1)).g;
+    float t12 = texture2D(readBuffer, vUv + texel * vec2( 0,  1)).g;
+    float t22 = texture2D(readBuffer, vUv + texel * vec2( 1,  1)).g;
 
-    // second column
-    float tx1y0 = texture2D(readBuffer, vUv + texel * vec2( 0, -1)).r;
-    float tx1y1 = texture2D(readBuffer, vUv + texel * vec2( 0,  0)).r;
-    float tx1y2 = texture2D(readBuffer, vUv + texel * vec2( 0,  1)).r;
+    float valueX =
+        t00*-1.0 + t10*-2.0 + t20*-1.0 +
+        t02* 1.0 + t12* 2.0 + t22* 1.0;
+    valueX /= 4.0;
+    float valueY =
+        t00*-1.0 + t01*-2.0 + t02*-1.0 +
+        t20* 1.0 + t20* 2.0 + t22* 1.0;
+    valueY /= 4.0;
 
-    // third column
-    float tx2y0 = texture2D(readBuffer, vUv + texel * vec2( 1, -1)).r;
-    float tx2y1 = texture2D(readBuffer, vUv + texel * vec2( 1,  0)).r;
-    float tx2y2 = texture2D(readBuffer, vUv + texel * vec2( 1,  1)).r;
+    float G = sqrt((valueX * valueX) + (valueY * valueY));
+    float value = clamp(G, 0.0, 1.0);
 
-    // gradient value in x direction
-    float valueGx = Gx[0][0] * tx0y0 + Gx[1][0] * tx1y0 + Gx[2][0] * tx2y0 +
-        Gx[0][1] * tx0y1 + Gx[1][1] * tx1y1 + Gx[2][1] * tx2y1 +
-        Gx[0][2] * tx0y2 + Gx[1][2] * tx1y2 + Gx[2][2] * tx2y2;
-
-    // gradient value in y direction
-    float valueGy = Gy[0][0] * tx0y0 + Gy[1][0] * tx1y0 + Gy[2][0] * tx2y0 +
-        Gy[0][1] * tx0y1 + Gy[1][1] * tx1y1 + Gy[2][1] * tx2y1 +
-        Gy[0][2] * tx0y2 + Gy[1][2] * tx1y2 + Gy[2][2] * tx2y2;
-
-    // magnitude of the total gradient
-    float G = sqrt((valueGx * valueGx) + (valueGy * valueGy));
-
-    gl_FragColor = vec4(vec3(G), 1);
+    gl_FragColor = vec4(vec3(value), 1.0);
 }

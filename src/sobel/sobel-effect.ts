@@ -31,7 +31,7 @@ export class SobelEffect {
                 resolution: { value: new Vector2() },
             },
             vertexShader: VERTEX_SHADER,
-            fragmentShader: FRAGMENT_SHADER
+            fragmentShader: FRAGMENT_SHADER,
         });
         this.fsQuad.material = this.shaderMaterial;
     }
